@@ -13,26 +13,28 @@ then
 	exit 2
 fi
 
-cd $1;
-mkdir r_all;
 
-#Count *.JPG files
-#Echo convert process
-
-count=$(ls -1 *.JPG | wc -l)
-converted_count=0
+sourceExtension='.JPG'
+dirName='r_all';
+convertedCount=0;
 percentage=0;
-last_percentage=0;
+previousPercentage=0;
 cr='\r'; #used for the progress line rewrite
 
-echo $count 'pictures with .JPG extension to reduce';
+
+cd $1;
+mkdir $dirName;
+
+count=$(ls -1 *$sourceExtension | wc -l);
+
+echo "$count picture(s) with $sourceExtension extension to reduce";
 
 if [ $count -gt 0 ];
 then
-	for i in *.JPG; do
-		convert "$i" -resize 37% -quality 88 r_all/$(basename "$i" .JPG).jpg;
-		let converted_count++
-		percentage=$(($converted_count*100/$count))
+	for i in *$sourceExtension; do
+		convert "$i" -resize 37% -quality 88 -auto-orient $dirName/$(basename "$i" $sourceExtension).jpg;  #use -strip to remove exif data
+		let convertedCount++
+		percentage=$(($convertedCount*100/$count))
 
 		#Cancel the progress bar line erase for the last file
 		if [ $percentage == 100 ];
@@ -40,10 +42,10 @@ then
 			cr='\n';
 		fi
 
-		if [ $percentage != $last_percentage ];
+		if [ $percentage != $previousPercentage ];
 		then
-			last_percentage=$percentage
-			echo -ne ' '$percentage'% complete - ('$converted_count'/'$count')'$cr
+			previousPercentage=$percentage
+			echo -ne ' '$percentage'% complete - ('$convertedCount'/'$count')'$cr
 		fi
 	done
 else
@@ -51,4 +53,7 @@ else
 	exit 3
 fi
 
-notify-send "$1 JPEG reduction completed. $converted_count image(s) reduced." -t 6000;
+if command -v notify-send > /dev/null;
+then
+    notify-send "$1 $sourceExtension reduction completed. $convertedCount image(s) reduced." -t 6000;
+fi
